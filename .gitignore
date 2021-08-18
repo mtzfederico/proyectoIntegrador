@@ -1,0 +1,4 @@
+credentials.py
+*.p8
+
+.DS_Store

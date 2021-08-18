@@ -2,10 +2,62 @@ import speech_recognition as sr
 # from word2number import w2n
 from datetime import datetime
 from datetime import timedelta
-# from datetime import date
+import sqlite3
+from sqlite3 import Error
+import pyowm
+import credentials
 
-def addToDB():
-    pass
+openMap = pyowm.OWM(credentials.openWeatherMapsAPIKey)
+weatherManager = openMap.weather_manager()
+
+def connectToDB():
+    try:
+        db_file = "alarms.db"
+        conn = sqlite3.connect(db_file)
+        return conn
+    except Error as e:
+        print(f"[connectToDB] Error: {e}")
+    finally:
+        return conn
+
+def createTable(conn):
+    sqlTable = """CREATE TABLE IF NOT EXISTS alarms (
+                                        id integer PRIMARY KEY,
+                                        type text NOT NULL,
+                                        notificationType text NOT NULL,
+                                        optionalMessage text,
+                                        creationDate text NOT NULL,
+                                        alarmDate text NOT NULL
+                                    );"""
+
+    try:
+        c = conn.cursor()
+        c.execute(sqlTable)
+    except Error as e:
+        print(e)
+
+conn = connectToDB()
+createTable(conn)
+
+def addToDB(type, notificationType, optionalMessage, alarmDate):
+    # notificationType puede ser speech, notification, both
+    if conn == None:
+        connectToDB()
+
+    try:
+        creationDate = datetime.now().isoformat()
+
+        command = "INSERT INTO alarms(type, notificationType, optionalMessage, creationDate, alarmDate) VALUES(?, ?, ?, ?, ?)"
+        values = (type, notificationType, optionalMessage, creationDate, alarmDate)
+        cur = conn.cursor()
+        cur.execute(command, values)
+        conn.commit()
+
+    except Exception as e:
+        print(f"[addToDB] Error: {e}")
+    finally:
+        print("Saved")
+    
 
 def processReminderDetails(googleString):
     q = googleString.lower().split("remind me in ")[1]
@@ -32,8 +84,8 @@ def processReminderDetails(googleString):
 
     print(f"alarmTime: {alarmTime}")
 
-    addToDB()
-    return alarmTime, description
+    addToDB("reminder", "speech", "", alarmTime)
+    return True
 
 weekDays = {"monday": "0", "tuesday": "1", "wednesday": "2", "thursday": "3", "friday": "4", "saturday": "5", "sunday": "6"}
 
@@ -78,11 +130,43 @@ def processAlarmDetails(googleString): # set an alarm for (today, tomorrow, frid
     description = ' '.join(description)
     print(f"description: {description}")
 
-    print(f"alarmTime: {alarmTime}")
+    print(f"alarmTime: {alarmTime.isoformat()}")
 
-    addToDB()
-    return alarmTime, description
+    addToDB("alarm", "speech", "", alarmTime)
+    return True
 
+def processTimerDetails(googleString): # set a timer for (15 minutes, 2 hours)
+    q = googleString.lower().split("set a timer for ")[1]
+    restOfQ = q.split(" ")
+
+    time = timeUnit = restOfQ[0]
+    print(f"time: {time}")
+    timeUnit = restOfQ[1]
+    print(f"timeUnit: {timeUnit}")
+
+    if timeUnit == "minutes" or timeUnit == "minute":
+        alarmTime = datetime.now() + timedelta(minutes=int(time))
+    elif timeUnit == "hours" or timeUnit == "hour":
+        alarmTime = datetime.now() + timedelta(hours=int(time))
+
+    print(f"alarmTime: {alarmTime.isoformat()}")
+
+    addToDB("timer", "speech", "", alarmTime)
+    return True
+
+
+def getWeather(location):
+    weather = weatherManager.weather_at_place(location).weather
+    return weather.temperature("celsius")
+
+def processGetWeather(googleString): # How is the weather. How is the weather in (location)
+    # q = googleString.lower().split("set a timer for ")[1]
+
+    location = "Monterrey,mx"
+    result = getWeather(location)
+
+
+    
 
 rec = sr.Recognizer()
 rec2 = sr.Recognizer()
@@ -106,14 +190,19 @@ while True:
                 googleString = rec2.recognize_google(audio2)
                 print(googleString)
                 if "remind me in" in googleString.lower(): # remind me in twenty minutes to do something
-                   alarmTime, description = processReminderDetails(googleString)
-                   print("")
+                   success = processReminderDetails(googleString)
 
                 if "set an alarm for " in googleString.lower(): # set an alarm for (tomorrow, friday) at five pm
-                    alarmTime, description = processAlarmDetails(googleString)
+                    success = processAlarmDetails(googleString)
+
+                if "set a timer for " in googleString.lower(): # set a timer for (15 minutes, 2 hours)
+                    success = processTimerDetails(googleString)
+
+                if "How is the weather" in googleString.lower():
+                    processGetWeather(googleString)
 
             except Exception as e:
-               print(f"Error {e}")
+               print(f"Exception Error: {e}")
 
         if "bye" in string.lower():
             print("Goodbye")
