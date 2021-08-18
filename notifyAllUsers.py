@@ -1,11 +1,13 @@
-# https://gobiko.com/blog/token-based-authentication-http2-example-apns/
 import json
 import jwt # requiers pip3 install cryptography
 import time
 from hyper import HTTPConnection
+import sqlite3
+from sqlite3 import Error
 
+# https://gobiko.com/blog/token-based-authentication-http2-example-apns/
+# https://developer.apple.com/documentation/usernotifications/setting_up_a_remote_notification_server/generating_a_remote_notification
 # https://developer.apple.com/documentation/usernotifications/setting_up_a_remote_notification_server/sending_notification_requests_to_apns
-
 # https://developer.apple.com/documentation/usernotifications/setting_up_a_remote_notification_server/handling_notification_responses_from_apns
 
 class color:
@@ -20,6 +22,32 @@ APNS_KEY_ID = 'CRN8H596K4' # actual key
 APNS_AUTH_KEY = 'AuthKey_CRN8H596K4.p8' # this is the path, file is in the same folder
 TEAM_ID = '385RCNMZ5L' # actual team id
 
+def connectToDB():
+    try:
+        db_file = "APNS.db"
+        conn = sqlite3.connect(db_file)
+        return conn
+    except Error as e:
+        print(f"[connectToDB] Error: {e}")
+    finally:
+        return conn
+
+def createTable(conn):
+    sqlTable = """CREATE TABLE IF NOT EXISTS APNSProviderToken (
+                                        JWT text NOT NULL,
+                                        creationEpoch text NOT NULL,
+                                        app text NOT NULL,
+                                        id integer PRIMARY KEY
+                                    );"""
+
+    try:
+        c = conn.cursor()
+        c.execute(sqlTable)
+    except Error as e:
+        print(e)
+
+conn = connectToDB()
+createTable(conn)
 
 # https://jaxenter.com/implement-switch-case-statement-python-138315.html
 class Switcher(object):
@@ -68,30 +96,47 @@ def generateToken():
 
     newTokenUTF8 = newToken.decode('utf-8')
 
+    if conn == None:
+        connectToDB()
+
+    try:
+        command = "UPDATE APNSProviderToken SET JWT = ?, creationEpoch = ? WHERE app = 'main'"
+        values = (newTokenUTF8, newTokenGenTime)
+        cur = conn.cursor()
+        cur.execute(command, values)
+        conn.commit()
+
+    except Exception as e:
+        print(f"{color.red}[generateToken] Error:{color.end} {e}")
+    finally:
+        print(f"{color.green}Saved Provider Token{color.end}")
+
+
     print(f"New token is: {newTokenUTF8}")
     print(f"generated at {newTokenGenTime}")
     return newTokenUTF8
 
 
 def getToken():
-    return "eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiIsImtpZCI6IkNSTjhINTk2SzQifQ.eyJpc3MiOiIzODVSQ05NWjVMIiwiaWF0IjoxNjI5MjQyNTgzLjc4MTEwNzJ9.pDig1tuJanuDwLMkElecGrJJz0ZpC0Uk_rBM6xe9BSjJM83vNFLn74iIDVwLXAguRwpjW-rAXpSSHuPo95K4cQ"
-    # return generateToken()
-    # return None
-    # return "eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiIsImtpZCI6IkNSTjhINTk2SzQifQ.eyJpc3MiOiIzODVSQ05NWjVMIiwiaWF0IjoxNjI5MjQyNTgzLjc4MTEwNzJ9.pDig1tuJanuDwLMkElecGrJJz0ZpC0Uk_rBM6xe9BSjJM83vNFLn74iIDVwLXAguRwpjW-rAXpSSHuPo95K4cQ"
-    # generated at 1629242221.2275255 
+    if conn == None:
+        connectToDB()
 
-""""
-def getToken(cursor):
     dbToken = None
-    # "CREATE TABLE APNSJWT (JWT VARCHAR(255), creationEpoch BIGINT(255), app VARCHAR(255), id INT AUTO_INCREMENT PRIMARY KEY)"
-    sqlCommand = "SELECT * FROM APNSJWT WHERE app = 'main'"
-    cursor.execute(sqlCommand)
+    cur = conn.cursor()
+    command = "SELECT * FROM APNSProviderToken WHERE app = 'main'"
+    cur.execute(command)
 
-    myresult = cursor.fetchall()
+    myresult = cur.fetchall()
 
-    if cursor.rowcount == 0:
-        print(color.red, f"[getToken] No token found in DB. Add one manually", color.end)
-        return None
+    if len(myresult) <= 0:
+        print(color.red, f"[getToken] No token found in DB. Generating one", color.end)
+        command = "INSERT INTO APNSProviderToken(JWT, creationEpoch, app) VALUES(?, ?, ?)"
+        values = ("", "0", "main")
+        cur.execute(command, values)
+        conn.commit()
+        newToken = generateToken()
+
+        return newToken
 
     tokenGenTime = myresult[0][1] #tokens are only valid for 60 minutes but they shouldn't be refreshed more than once every 20 minutes
     print(f"[getToken] tokenGenTime: {tokenGenTime}")
@@ -100,16 +145,16 @@ def getToken(cursor):
 
     currentTime = time.time()
 
-    timeDifference = currentTime - tokenGenTime
+    timeDifference = currentTime - float(tokenGenTime)
 
     if timeDifference >= 3300: # 3300 is 55 minutes in seconds
         print(color.red, f"JWT is expired by {color.purple}{timeDifference}{color.red} seconds", color.end)
-        dbToken = generateToken(cursor)
+        dbToken = generateToken()
     else:
         print(color.green, "JWT is still valid", color.end)
 
     return dbToken
-"""
+
 
 class Notification:
     deviceToken = ''
@@ -126,16 +171,16 @@ def sendnotification(notifications, isProduction=False):
 
     conn = HTTPConnection(serverURL) # production url is api.push.apple.com  optional port 2197  development is api.sandbox.push.apple.com
 
-    for item in notifications:
-        path = '/3/device/{0}'.format(item.deviceToken)
-        payload = json.dumps(item.payload).encode('utf-8')
+    for notification in notifications:
+        path = '/3/device/{0}'.format(notification.deviceToken)
+        payload = json.dumps(notification.payload).encode('utf-8')
 
         # Send our request
         conn.request(
             'POST',
             path,
             payload,
-            headers=item.headers
+            headers=notification.headers
         )
         resp = conn.get_response()
         #print(resp.headers.items_())
@@ -146,54 +191,43 @@ def sendnotification(notifications, isProduction=False):
         result = s.handleStatusCode(resp.status)
         print(result)
 
-        """
-        if resp.status == 200:
-            print("status is 200 OK")
-        else:
-            print(f"status is: {resp.status}")
-            """
         print(resp.read())
 
     conn.close()
 
 
-def sendToAllUsers(payload, isProduction):
-    token = getToken()
+def notifyAllUsers(payload, deviceTokens, isProduction=False):
+    providerToken = getToken()
 
-    if token == None:
-        print("[sendToAllUsers] No Token")
+    if providerToken == None:
+        print("[notifyAllUsers] No providerToken")
         return
-
-    tokens = ["b068987e2dea0f145bed17eac023cf1bd9b1e806e9dda93f82f731c1fa735023"]
 
     notificationsToSend = []
 
-    for token in tokens:
+    for deviceToken in deviceTokens:
         notification = Notification()
 
-        notification.deviceToken = token
+        notification.deviceToken = deviceToken
         notification.payload = payload
 
         notification.headers = {
             'apns-expiration': '0',
             'apns-priority': '10', # send 5 if it is not very important or if the payload contains content-available
             'apns-push-type': 'alert',
-            'apns-topic': 'com.mtzfederico.proyectoIntegrador ',
-            'authorization': f'bearer {token}'
+            'apns-topic': 'com.mtzfederico.proyectoIntegrador',
+            'authorization': f'bearer {providerToken}'
         }
         notificationsToSend.append(notification)
 
     sendnotification(notificationsToSend, isProduction)
 
-# https://developer.apple.com/documentation/usernotifications/setting_up_a_remote_notification_server/generating_a_remote_notification
-
 if __name__ == '__main__':
     payload = {
-        'aps': { 'alert': { 'title': 'This is a test' } },
-        'type': 'demo',
+        'aps': { 'alert': { 'title': 'Test', 'body': 'This is a test notification' } },
+        'type': 'test',
     }
 
-    sendToAllUsers(payload, False)
+    deviceTokens = ["b068987e2dea0f145bed17eac023cf1bd9b1e806e9dda93f82f731c1fa735023"]
 
-# notificationsToSend = [notificationToSend, notificationToSend2]
-# sendnotification(notificationsToSend, True)
+    notifyAllUsers(payload, deviceTokens, False)
