@@ -2,6 +2,12 @@ from datetime import datetime
 import sqlite3
 from sqlite3 import Error
 from playsound import playsound
+import iOSNotifications
+
+def sendNotification():
+    payload = { 'aps': { 'alert': { 'title': 'Test', 'body': 'This is a test notification' } } }
+    deviceTokens = ["b068987e2dea0f145bed17eac023cf1bd9b1e806e9dda93f82f731c1fa735023"]
+    iOSNotifications.notifyUsers(payload, deviceTokens, False)
 
 def connectToDB():
     try:
@@ -28,8 +34,12 @@ for row in rows:
 
     alarmTime = datetime.fromisoformat(str(row[0]))
     if alarmTime < datetime.now():
-        # notify the user
-        if row[2] == "speech" or row[2] == "both":
+        if row[2] == "speech":
+            playsound('proyectoIntegrador/doorbell-2.wav')
+        elif row[2] == "notification":
+            sendNotification()
+        else: # asume both
+            sendNotification()
             playsound('proyectoIntegrador/doorbell-2.wav')
 
         print("Deleting alarm")

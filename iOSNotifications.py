@@ -196,7 +196,7 @@ def sendnotification(notifications, isProduction=False):
     conn.close()
 
 
-def notifyAllUsers(payload, deviceTokens, isProduction=False):
+def notifyUsers(payload, deviceTokens, isProduction=False):
     providerToken = getToken()
 
     if providerToken == None:
@@ -230,4 +230,4 @@ if __name__ == '__main__':
 
     deviceTokens = ["b068987e2dea0f145bed17eac023cf1bd9b1e806e9dda93f82f731c1fa735023"]
 
-    notifyAllUsers(payload, deviceTokens, False)
+    notifyUsers(payload, deviceTokens, False)
