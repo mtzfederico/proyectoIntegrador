@@ -1,5 +1,5 @@
 credentials.py
 *.p8
 *.cer
-
+*.db
 .DS_Store
