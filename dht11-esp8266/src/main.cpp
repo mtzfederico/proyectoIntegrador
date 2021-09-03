@@ -6,7 +6,7 @@
 #include <PubSubClient.h>
 #include "wifi.h"
 
-#define DHTpin 14 // D5 of NodeMCU is GPIO14
+#define DHTpin 5 // 14 is D5 of NodeMCU is GPIO14
 
 #define DHTTYPE DHT11 // DHT 11
 
@@ -57,8 +57,24 @@ void callback(char* topic, byte* payload, unsigned int length) {
   Serial.println(msg);
 
   if (String(topic) == "tempSens/temp") {
+    float temp = dht.readTemperature();
 
-    // client.publish("tempSens/temp/val", "temp");
+    if (isnan(temp)) {
+      Serial.println("temp is nan");
+      client.publish("tempSens/temp/val", "n");
+      return;
+    }
+
+    Serial.printf("Temp: %f\n", temp);
+    String temperature = String(temp);
+
+    char teemp[6];
+    
+    temperature.toCharArray(teemp, 6);
+
+    Serial.println(teemp);
+
+    client.publish("tempSens/temp/val", teemp);
   }
 
 }
@@ -97,6 +113,8 @@ void setup() {
   client.setServer(mqtt_server, 1883);
   client.setCallback(callback);
 
+  pinMode(13, OUTPUT);
+
   dht.begin();
 }
 
@@ -115,26 +133,15 @@ void loop() {
   client.loop();
   httpServer.handleClient();
 
-/*
-  float temp = dht.readTemperature();
-
-    if (isnan(temp)) {
-      Serial.println("temp is nan");
-      return;
-    }
-
-    Serial.printf("Temp: %f\n", temp);
-    */
-
    unsigned long currentMillis = millis();
    if ((currentMillis - previousMillis) > 4000) {
      previousMillis = currentMillis;
 
      if (ledOn) {
        ledOn = false;
-       digitalWrite(13, LOW);
+       digitalWrite(D7, LOW);
      } else {
-       digitalWrite(13, HIGH);
+       digitalWrite(D7, HIGH);
        ledOn = true;
      }
    }
