@@ -57,14 +57,6 @@ void callback(char* topic, byte* payload, unsigned int length) {
   Serial.println(msg);
 
   if (String(topic) == "tempSens/temp") {
-    float temp = dht.readTemperature();
-
-    if (isnan(temp)) {
-      Serial.println("temp is nan");
-      return;
-    }
-
-    Serial.printf("Temp: %f\n", temp);
 
     // client.publish("tempSens/temp/val", "temp");
   }
@@ -108,6 +100,9 @@ void setup() {
   dht.begin();
 }
 
+unsigned long previousMillis = 0; // millis();
+bool ledOn = false;
+
 void loop() {
   if (!client.connected()) {
     reconnect();
@@ -119,4 +114,29 @@ void loop() {
 
   client.loop();
   httpServer.handleClient();
+
+/*
+  float temp = dht.readTemperature();
+
+    if (isnan(temp)) {
+      Serial.println("temp is nan");
+      return;
+    }
+
+    Serial.printf("Temp: %f\n", temp);
+    */
+
+   unsigned long currentMillis = millis();
+   if ((currentMillis - previousMillis) > 4000) {
+     previousMillis = currentMillis;
+
+     if (ledOn) {
+       ledOn = false;
+       digitalWrite(13, LOW);
+     } else {
+       digitalWrite(13, HIGH);
+       ledOn = true;
+     }
+   }
+   
 }

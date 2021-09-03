@@ -7,6 +7,8 @@ from sqlite3 import Error
 import pyowm
 import credentials
 import textToSpeech
+import mqttFunctions
+import time
 
 # Colors used for printing
 class color:
@@ -191,11 +193,13 @@ def processGetWeather(googleString): # How is the weather. How is the weather in
 
     textToSpeech.say(f"The teperature is {result} degrees celsius")
 
-# Proccesses the get room temperature command
-def processGetRoomTemperature(): # What's the room's temperature
-    pass
+def gotRoomTemperature():
+    textToSpeech.say(f"The room teperature is {mqttFunctions.latestTemp} degrees celsius")
 
-    textToSpeech.say(f"The room teperature is temperature degrees celsius")
+# Proccesses the get room temperature command
+def processGetRoomTemperature(): # What's the room temperature
+    mqttFunctions.tempCallBack = gotRoomTemperature
+    mqttFunctions.askForTemp()
 
     
 # Voice recognizer instances used.
@@ -240,7 +244,7 @@ while True:
                 if "How is the weather" in googleString.lower():
                     processGetWeather(googleString)
                 
-                if "What's the room's temperature" in googleString.lower(): # What's the room's temperature
+                if "what's the room temperature" in googleString.lower(): # What's the room temperature
                     processGetRoomTemperature()
 
             # Handles errors in the commands
