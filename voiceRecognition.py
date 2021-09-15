@@ -21,57 +21,18 @@ class color:
 openMap = pyowm.OWM(credentials.openWeatherMapsAPIKey)
 weatherManager = openMap.weather_manager()
 
-def connectToDB():
-    try:
-        db_file = "alarms.db"
-        conn = sqlite3.connect(db_file)
-        return conn
-    except Error as e:
-        print(f"{color.red}[connectToDB] Error: {e}", color.end)
-    finally:
-        return conn
-
-def createTable(conn):
-    sqlTable = """CREATE TABLE IF NOT EXISTS alarms (
-                                        id integer PRIMARY KEY,
-                                        type text NOT NULL,
-                                        notificationType text NOT NULL,
-                                        optionalMessage text,
-                                        creationDate text NOT NULL,
-                                        alarmDate text NOT NULL
-                                    );"""
-
-    try:
-        c = conn.cursor()
-        c.execute(sqlTable)
-    except Error as e:
-        print(f"{color.red}[createTable] Error:{color.end} {e}")
-
-conn = connectToDB()
-createTable(conn)
-
 # Saves an alarm to the database. Returns True if saved, False otherwise
 def addToDB(type, notificationType, optionalMessage, alarmDate):
     # notificationType puede ser speech, notification, both
-    if conn == None:
-        connectToDB()
-
+    
     try:
-        # Convert the date to text in the ISO-8601 format
-        creationDate = datetime.now().isoformat()
-
-        # Save the data to sqlite
-        command = "INSERT INTO alarms(type, notificationType, optionalMessage, creationDate, alarmDate) VALUES(?, ?, ?, ?, ?)"
-        values = (type, notificationType, optionalMessage, creationDate, alarmDate)
-        cur = conn.cursor()
-        cur.execute(command, values)
-        conn.commit()
+       mqttFunctions.sendToServer(f"{type},{notificationType},{optionalMessage},{alarmDate}")
 
     except Exception as e:
-        print(f"{color.red}[addToDB] Error:{color.end} {e}")
+        print(f"[addToDB] {color.red}Error:{color.end} {e}")
         return False
     finally:
-        print("Saved")
+        print(f"[addToDB] {color.green}Saved", color.end)
         return True
     
 # Proccesses the set a reminder command
@@ -172,8 +133,8 @@ def processTimerDetails(googleString): # set a timer for (15 minutes, 2 hours)
         alarmTime = datetime.now() + timedelta(minutes=int(time))
     elif timeUnit == "hours" or timeUnit == "hour":
         alarmTime = datetime.now() + timedelta(hours=int(time))
-
-    print(f"{color.purple}alarmTime: {alarmTime.isoformat()}", color.end())
+    
+    print(f"{color.purple}alarmTime: {alarmTime.isoformat()}", color.end)
 
     success = addToDB("timer", "notification", "This is a test", alarmTime)
     
@@ -196,9 +157,10 @@ def processGetWeather(googleString): # How is the weather. How is the weather in
 def gotRoomTemperature():
     textToSpeech.say(f"The room teperature is {mqttFunctions.latestTemp} degrees celsius")
 
+mqttFunctions.tempCallBack = gotRoomTemperature
+
 # Proccesses the get room temperature command
 def processGetRoomTemperature(): # What's the room temperature
-    mqttFunctions.tempCallBack = gotRoomTemperature
     mqttFunctions.askForTemp()
 
     
