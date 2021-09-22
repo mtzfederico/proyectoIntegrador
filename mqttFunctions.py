@@ -43,7 +43,6 @@ def on_message(client, userdata, msg):
 def on_publish(client, userdata, result):
     print(color.green, "data published", color.end)
 
-
 client = mqtt.Client()
 client.on_connect = on_connect
 client.on_message = on_message
@@ -58,6 +57,9 @@ def askForTemp():
 
 def sendToServer(payload):
     client.publish('server/receive', payload=f"{payload}", qos=2, retain=False)
+
+def changeLightColor(r, g, b, id):
+    client.publish(f'light/{id}', payload=f"{r},{g},{b}", qos=1, retain=False)
 
 if __name__ == "__main__":
     def actualCallback():

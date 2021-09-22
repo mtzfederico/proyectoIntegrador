@@ -163,6 +163,17 @@ mqttFunctions.tempCallBack = gotRoomTemperature
 def processGetRoomTemperature(): # What's the room temperature
     mqttFunctions.askForTemp()
 
+# Processes the turn the light on|off command
+def processChangeLight():  # turn the light on|off
+    q = googleString.lower().split("turn the light ")[1]
+    
+    id = "1"
+
+    if q == "on":
+        mqttFunctions.changeLightColor(255, 255, 255, id)
+    elif q == "off":
+        mqttFunctions.changeLightColor(0, 0, 0, id)
+
     
 # Voice recognizer instances used.
 # There has to be two because they fail when used twice in a row
@@ -208,6 +219,9 @@ while True:
                 
                 if "what's the room temperature" in googleString.lower(): # What's the room temperature
                     processGetRoomTemperature()
+
+                if "turn the light" in googleString.lower(): # turn the light on|off
+                    processChangeLight()
 
             # Handles errors in the commands
             except Exception as e:

@@ -1,4 +1,5 @@
 from flask import Flask, request, Response
+import json
 import mqttFunctions
 import sqlite3
 from sqlite3 import Error
@@ -72,6 +73,19 @@ def mqttServerCallback(payload):
 
 mqttFunctions.serverReceivedCallback = mqttServerCallback
 
+def genReturn(response_raw, status, cache='private', mimetype='application/json'):
+    response = json.dumps(response_raw)
+    resp = Response(response, status=status, mimetype=mimetype)
+    if cache == 'private':
+        resp.headers['cache-control'] = 'private'
+    if cache == 'no-cache':
+        resp.headers['cache-control'] = 'no-cache'
+    if cache == '5min':
+        resp.headers['cache-control'] = 'max-age=300' # the cache is valid for 5 minutes
+    if cache == '10min':
+        resp.headers['cache-control'] = 'max-age=600' # the cache is valid for 5 minutes
+    return resp
+
 #<--------- Server Functions Start --------->
 
 app = Flask(__name__)
@@ -80,22 +94,66 @@ app = Flask(__name__)
 def page_not_found(e):
     return "The page you are looking for can't be found", 404
 
+@app.route("/getAlarms", methods=['GET'])
+def getAlarms():
+    type = request.args.get('type', default = "", type = str)
+
+    if type == "":
+        return Response("Bad Request", status=300)
+
+    cur = conn.cursor()
+    command = "SELECT alarmDate, optionalMessage FROM alarms WHERE type = ? ORDER BY alarmDate DESC;"
+    values = (type,)
+    cur.execute(command, values)
+
+    rows = cur.fetchall()
+    if len(rows) <= 0:
+        print("No alarms found")
+        response_raw = { "alarms": [] } 
+        status = 220
+        return genReturn(response_raw, status)
+
+    alarms = []
+
+    for row in rows:
+        print(row)
+
+        alarmTime = datetime.fromisoformat(str(row[0]))
+        """
+        if datetime.now() <= alarmTime:
+            pass
+        else:
+        """
+        alarm = {"alarmDate": alarmTime.timestamp(), "optionalMessage": row[1]}
+        alarms.append(alarm)
+
+    response_raw = { "alarms": alarms } 
+    status = 200
+
+    print(f"response_raw: {response_raw}")
+    return genReturn(response_raw, status)
+
 @app.route("/changeColor", methods=['GET'])
 def hello():
     red = request.args.get('red', default = "0.00", type = str)
     green = request.args.get('green', default = "0.00", type = str)
     blue = request.args.get('blue', default = "0.00", type = str)
-
+    id = request.args.get('id', default = "", type = str)
+    
+    """
     red = float(red)*255
     green = float(green)*255
     blue = float(blue)*255
+    """
 
+    print(f"{color.purple}ID:{color.end} {id}")
     print(f"{color.red}Red:{color.end} {red}")
     print(f"{color.green}Green:{color.end} {green}")
     print(f"{color.blue}Blue:{color.end} {blue}")
-    mqttFunctions.client.publish('lamp/rgb', payload=f"{red},{green},{blue}", qos=1, retain=False)
 
-    return Response(f"Hello {red},{green},{blue}", status=200)
+    mqttFunctions.changeLightColor(red, green, blue, id)
+
+    return Response(f"ID {id}: {red},{green},{blue}", status=200)
 
 @app.route("/setAlarm", methods=['POST'])
 def setAlarm():
