@@ -1,3 +1,11 @@
+"""
+    iOSNotifications.py
+
+    This file contains the Text to Speach (TTS) related functions.
+    It is imported in some files.
+    It requires an internet connection and some speakers.
+"""
+
 from gtts import gTTS
 import os
 from playsound import playsound
@@ -33,7 +41,7 @@ def say(text):
         print("Removed TTS file")
         return
     except Exception as e:
-        print(f"Message: {text}")
+        print(f"TTS Message: {text}")
         print(f"[Say] Error: {e}")
 
 if __name__ == "__main__":

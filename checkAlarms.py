@@ -1,3 +1,11 @@
+"""
+    checkAlarms.py
+
+    This file checks the DB for alarms that should be acted on.
+    It needs to always be ruinning for the alarm notifications and TTS to work.
+    It requires a speaker to work.
+"""
+
 from datetime import datetime
 import sqlite3
 from sqlite3 import Error

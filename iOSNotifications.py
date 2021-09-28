@@ -1,3 +1,11 @@
+"""
+    iOSNotifications.py
+
+    This file contains the iOS notifications related functions.
+    It is imported in some files.
+    It requires an apple developer account.
+"""
+
 import json
 import jwt # requiers pip3 install cryptography
 import time
@@ -19,8 +27,10 @@ class color:
 
 ALGORITHM = 'ES256'
 APNS_KEY_ID = 'CRN8H596K4' # actual key
-APNS_AUTH_KEY = 'AuthKey_CRN8H596K4.p8' # this is the path, file is in the same folder
+APNS_AUTH_KEY = 'AuthKey_CRN8H596K4.p8' # this is the auth key's path, file is in the same folder
 TEAM_ID = '385RCNMZ5L' # actual team id
+
+APNS_TOPIC = "com.mtzfederico.proyectoIntegrador" # the iOS app's bundle id
 
 def connectToDB():
     try:
@@ -215,7 +225,7 @@ def notifyUsers(payload, deviceTokens, isProduction=False):
             'apns-expiration': '0',
             'apns-priority': '10', # send 5 if it is not very important or if the payload contains content-available
             'apns-push-type': 'alert',
-            'apns-topic': 'com.mtzfederico.proyectoIntegrador',
+            'apns-topic': APNS_TOPIC,
             'authorization': f'bearer {providerToken}'
         }
         notificationsToSend.append(notification)

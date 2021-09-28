@@ -1,9 +1,18 @@
+"""
+    webServer.py
+
+    This is the web server that let's the iOS app interact with the DB and with MQTT devices.
+    It needs to always be running for the app to work properly.
+"""
+
 from flask import Flask, request, Response
 import json
 import mqttFunctions
 import sqlite3
 from sqlite3 import Error
 from datetime import datetime
+import random
+import weatherForecast
 
 # Colors used for printing
 class color:
@@ -13,6 +22,7 @@ class color:
     red = '\033[91m'
     end = '\033[0m'
 
+# Connects to the DB
 def connectToDB():
     try:
         db_file = "alarms.db"
@@ -23,6 +33,7 @@ def connectToDB():
     finally:
         return conn
 
+# Creates the alarms table in the DB if it doesn't exist
 def createTable(conn):
     sqlTable = """CREATE TABLE IF NOT EXISTS alarms (
                                         id integer PRIMARY KEY,
@@ -73,6 +84,7 @@ def mqttServerCallback(payload):
 
 mqttFunctions.serverReceivedCallback = mqttServerCallback
 
+# Generates a WEB response from a status code and some JSON
 def genReturn(response_raw, status, cache='private', mimetype='application/json'):
     response = json.dumps(response_raw)
     resp = Response(response, status=status, mimetype=mimetype)
@@ -90,10 +102,23 @@ def genReturn(response_raw, status, cache='private', mimetype='application/json'
 
 app = Flask(__name__)
 
+# Handles the pages not found
 @app.errorhandler(404)
 def page_not_found(e):
     return "The page you are looking for can't be found", 404
 
+# Handles the get room status endpoint
+@app.route("/getRoomStatus", methods=['GET'])
+def getRoomStatus():
+
+    outdoorTemp = weatherForecast.getTemp()
+
+    response_raw = { "roomTemp": random.randint(5, 30), "outdoorTemp": outdoorTemp, "doorIsClosed": False } 
+    status = 200
+
+    return genReturn(response_raw, status)
+
+# Handles the get get alarms endpoint
 @app.route("/getAlarms", methods=['GET'])
 def getAlarms():
     type = request.args.get('type', default = "", type = str)
@@ -106,8 +131,8 @@ def getAlarms():
     values = (type,)
     cur.execute(command, values)
 
-    rows = cur.fetchall()
-    if len(rows) <= 0:
+    alarms = cur.fetchall()
+    if len(alarms) <= 0:
         print("No alarms found")
         response_raw = { "alarms": [] } 
         status = 220
@@ -115,17 +140,13 @@ def getAlarms():
 
     alarms = []
 
-    for row in rows:
-        print(row)
+    for alarm in alarms:
+        # print(alarm)
 
-        alarmTime = datetime.fromisoformat(str(row[0]))
-        """
-        if datetime.now() <= alarmTime:
-            pass
-        else:
-        """
-        alarm = {"alarmDate": alarmTime.timestamp(), "optionalMessage": row[1]}
-        alarms.append(alarm)
+        alarmTime = datetime.fromisoformat(str(alarm[0]))
+
+        alarmJSON = {"alarmDate": alarmTime.timestamp(), "optionalMessage": alarm[1]}
+        alarms.append(alarmJSON)
 
     response_raw = { "alarms": alarms } 
     status = 200
@@ -133,18 +154,13 @@ def getAlarms():
     print(f"response_raw: {response_raw}")
     return genReturn(response_raw, status)
 
+# Handles the get change color endpoint
 @app.route("/changeColor", methods=['GET'])
 def hello():
     red = request.args.get('red', default = "0.00", type = str)
     green = request.args.get('green', default = "0.00", type = str)
     blue = request.args.get('blue', default = "0.00", type = str)
     id = request.args.get('id', default = "", type = str)
-    
-    """
-    red = float(red)*255
-    green = float(green)*255
-    blue = float(blue)*255
-    """
 
     print(f"{color.purple}ID:{color.end} {id}")
     print(f"{color.red}Red:{color.end} {red}")
@@ -155,6 +171,7 @@ def hello():
 
     return Response(f"ID {id}: {red},{green},{blue}", status=200)
 
+# Handles the get set alarm endpoint
 @app.route("/setAlarm", methods=['POST'])
 def setAlarm():
     type = request.form.get('type', default = "", type = str)

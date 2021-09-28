@@ -1,14 +1,18 @@
+"""
+    voiceRecognition.py
+
+    This is the voice assistant
+    It needs to always be ruinning for the voice assistant to work.
+    It requires a microphone and a speaker.
+"""
+
 import speech_recognition as sr
 # from word2number import w2n
 from datetime import datetime
 from datetime import timedelta
-import sqlite3
-from sqlite3 import Error
-import pyowm
-import credentials
 import textToSpeech
 import mqttFunctions
-import time
+import weatherForecast
 
 # Colors used for printing
 class color:
@@ -17,9 +21,6 @@ class color:
     green = '\033[92m'
     red = '\033[91m'
     end = '\033[0m'
-
-openMap = pyowm.OWM(credentials.openWeatherMapsAPIKey)
-weatherManager = openMap.weather_manager()
 
 # Saves an alarm to the database. Returns True if saved, False otherwise
 def addToDB(type, notificationType, optionalMessage, alarmDate):
@@ -141,16 +142,11 @@ def processTimerDetails(googleString): # set a timer for (15 minutes, 2 hours)
     if success == False:
         textToSpeech.say("Error saving timer")
 
-# Fetches the current weather at the specified location. Returns temperature in celsius
-def getWeather(location):
-    weather = weatherManager.weather_at_place(location).weather
-    return weather.temperature("celsius")
-
 # Proccesses the get weather command
 def processGetWeather(googleString): # How is the weather. How is the weather in (location)
 
     location = "Monterrey,mx"
-    result = getWeather(location)
+    result = weatherForecast.getTemp(location)
 
     textToSpeech.say(f"The teperature is {result} degrees celsius")
 
@@ -214,7 +210,10 @@ while True:
                 if "set a timer for " in googleString.lower(): # set a timer for (15 minutes, 2 hours)
                     processTimerDetails(googleString)
 
-                if "How is the weather" in googleString.lower():
+                if "how is the weather" in googleString.lower():
+                    processGetWeather(googleString)
+
+                if "how's the weather" in googleString.lower():
                     processGetWeather(googleString)
                 
                 if "what's the room temperature" in googleString.lower(): # What's the room temperature

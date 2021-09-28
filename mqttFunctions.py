@@ -1,3 +1,10 @@
+"""
+    mqttFunctions.py
+
+    This is file contains the MQTT functions.
+    It is imported in some files.
+"""
+
 import paho.mqtt.client as mqtt
 
 class color:
@@ -19,10 +26,10 @@ serverReceivedCallback = defaultCallBack
 
 def on_connect(client, userdata, flags, rc):
         if rc == 0:
-                print(color.blue, "Connected successfuly", color.end)
+                print(color.blue, "MQTT Connected successfuly", color.end)
                 # print(userdata)
         else:
-                print(f"{color.red}Connection fail with code:{color.end} {rc}")
+                print(f"{color.red}MQTT Connection failed with code:{color.end} {rc}")
 
         # client.subscribe("esp8266")
         client.subscribe("tempSens/temp/val")
