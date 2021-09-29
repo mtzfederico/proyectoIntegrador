@@ -9,7 +9,6 @@
 from datetime import datetime
 import sqlite3
 from sqlite3 import Error
-from playsound import playsound
 import textToSpeech
 import iOSNotifications
 import time

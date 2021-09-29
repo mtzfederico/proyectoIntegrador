@@ -12,6 +12,7 @@ import time
 from hyper import HTTPConnection
 import sqlite3
 from sqlite3 import Error
+import credentials
 
 # https://gobiko.com/blog/token-based-authentication-http2-example-apns/
 # https://developer.apple.com/documentation/usernotifications/setting_up_a_remote_notification_server/generating_a_remote_notification
@@ -26,11 +27,11 @@ class color:
     end = '\033[0m'
 
 ALGORITHM = 'ES256'
-APNS_KEY_ID = 'CRN8H596K4' # actual key
-APNS_AUTH_KEY = 'AuthKey_CRN8H596K4.p8' # this is the auth key's path, file is in the same folder
-TEAM_ID = '385RCNMZ5L' # actual team id
+APNS_KEY_ID = credentials.APNS_KEY_ID
+APNS_AUTH_KEY = credentials.APNS_AUTH_KEY # this is the auth key's path, file is in the same folder
+TEAM_ID = credentials.TEAM_ID
 
-APNS_TOPIC = "com.mtzfederico.proyectoIntegrador" # the iOS app's bundle id
+APNS_TOPIC = credentials.APNS_TOPIC
 
 def connectToDB():
     try:
@@ -238,6 +239,6 @@ if __name__ == '__main__':
         'type': 'test',
     }
 
-    deviceTokens = ["b068987e2dea0f145bed17eac023cf1bd9b1e806e9dda93f82f731c1fa735023"]
+    deviceTokens = ["b068987e2dea0f145bed17eac023cf1bd9b1e806e9dda93f82f731c1fa735023"] # APNS device tokens
 
     notifyUsers(payload, deviceTokens, False)

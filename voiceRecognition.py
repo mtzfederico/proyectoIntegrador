@@ -7,7 +7,6 @@
 """
 
 import speech_recognition as sr
-# from word2number import w2n
 from datetime import datetime
 from datetime import timedelta
 import textToSpeech
