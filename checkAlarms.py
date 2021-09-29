@@ -66,6 +66,7 @@ def check():
             cur.execute(command, values)
             conn.commit()
 
-while True:
-    check()
-    time.sleep(1)
+if __name__ == "__main__":
+    while True:
+        check()
+        time.sleep(1)

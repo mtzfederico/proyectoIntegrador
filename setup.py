@@ -23,7 +23,7 @@ currentDIR = os.getcwd()
 # https://www.digitalocean.com/community/tutorials/how-to-serve-flask-applications-with-gunicorn-and-nginx-on-ubuntu-20-04
 # https://github.com/torfsen/python-systemd-tutorial
 
-serviceFileContents = f"""
+serverServiceFileContents = f"""
 [Unit]
 Description=Proyecto Integredor-webServer
 After=network.target
@@ -42,15 +42,21 @@ WantedBy=multi-user.target
 
 # gunicorn --workers 3 --bind unix:myproject.sock -m 007 wsgi:app
 
-# print(serviceFileContents)
+# print(serverServiceFileContents)
 
 try:
-    f = open("proyectoIntegrador.service", "x")
+    f = open("proyectoIntegrador-webServer.service", "x")
 
-    f.write(serviceFileContents)
+    f.write(serverServiceFileContents)
     f.close()
 except Exception as error:
     print(f"{color.red}Write service file error:{color.end} {error}")
 finally:
     print(color.green, "Saved service file", color.end)
-    os.system(f"systemctl link {currentDIR}/proyectoIntegrador.service")
+    os.system(f"systemctl link {currentDIR}/proyectoIntegrador-webServer.service")
+
+
+# make another service file for checkAlarms.py
+
+
+# figure out how to leave voiceRecognition.py running
