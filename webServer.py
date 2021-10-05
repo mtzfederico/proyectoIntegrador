@@ -190,4 +190,4 @@ def setAlarm():
         return Response("No data received", status=300)
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=9080, debug=True)
+    app.run(host='0.0.0.0', port=9090, debug=True)
