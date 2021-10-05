@@ -14,3 +14,6 @@ APNS_AUTH_KEY = '<APNS_KEY_FILE_PATH_GOES_HERE>' # The JWT APNS key file (ends i
 TEAM_ID = '<YOUR_APPLE_ACCOUNT_TEAM_ID_GOES_HERE>'
 
 APNS_TOPIC = "com.apple.sampleAPP" # the iOS app's bundle id
+
+MQTTServerIP = "10.0.0.53"
+MQTTServerPort = 1883

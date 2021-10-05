@@ -1,6 +1,6 @@
 # Proyecto Integrador
 
-This is a voice assistant program with a helper iOS app.
+This is a voice assistant program with a helper [iOS app](https://github.com/mtzfederico/proyectoIntegrador-iOS).
 This program let's you control things with voice and set alarms.
 
 This program consists of three parts. The voice assistant program, the web server, and the alarm notifier program.
@@ -10,6 +10,8 @@ The voice assistant program (voiceRecognition.py), runs constantly and when it i
 The Web Server (webServer.py), runs constantly and it handles requests from the iOS app.
 
 The alarm notifier program (checkAlarms.py), runs constantly and checks if an an alarm's alarmTime has already passed and notifies the user via iOS notifications or TTS.
+
+Made by Federico Martinez
 
 
 # Dependencies:
@@ -38,7 +40,6 @@ The `textToSpeech`, `iOSNotifications` and `credentials` files
     $ pip install -r requirements.txt
 
 3. Create the credentials file so that it has your API and APNS keys. Take a look at credentials_Template.py
-
 
 2. Run the setup script:
 

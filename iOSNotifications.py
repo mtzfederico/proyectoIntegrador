@@ -19,6 +19,7 @@ import credentials
 # https://developer.apple.com/documentation/usernotifications/setting_up_a_remote_notification_server/sending_notification_requests_to_apns
 # https://developer.apple.com/documentation/usernotifications/setting_up_a_remote_notification_server/handling_notification_responses_from_apns
 
+# Colors used for printing
 class color:
     purple = '\033[95m'
     blue = '\033[94m'
@@ -33,6 +34,7 @@ TEAM_ID = credentials.TEAM_ID
 
 APNS_TOPIC = credentials.APNS_TOPIC
 
+# Connects to the sqlite DB
 def connectToDB():
     try:
         db_file = "APNS.db"
@@ -43,6 +45,7 @@ def connectToDB():
     finally:
         return conn
 
+# Creates the APNSProviderToken DB table if it doesn't exist
 def createTable(conn):
     sqlTable = """CREATE TABLE IF NOT EXISTS APNSProviderToken (
                                         JWT text NOT NULL,
@@ -61,6 +64,7 @@ conn = connectToDB()
 createTable(conn)
 
 # https://jaxenter.com/implement-switch-case-statement-python-138315.html
+# Returns a message depending on the status code from APN
 class Switcher(object):
     def handleStatusCode(self,i):
         method_name='number_'+str(i)
@@ -85,7 +89,7 @@ class Switcher(object):
     def number_503(self):
         return 'server is shutting down and unavailable'
 
-
+# Generates the APN JWT used for authentication
 def generateToken():
     f = open(APNS_AUTH_KEY)
     secret = f.read()
@@ -127,7 +131,7 @@ def generateToken():
     print(f"generated at {newTokenGenTime}")
     return newTokenUTF8
 
-
+# Gets the APN JWT from the DB. if it is not found, it is generated.
 def getToken():
     if conn == None:
         connectToDB()
@@ -166,13 +170,13 @@ def getToken():
 
     return dbToken
 
-
+# Notification class used to generate the notification payload
 class Notification:
     deviceToken = ''
     headers = {}
     payload = {}
 
-
+# Sends the notifications to APN
 def sendnotification(notifications, isProduction=False):
     # Open a connection the APNS server
     serverURL = 'api.sandbox.push.apple.com:443'
@@ -206,7 +210,7 @@ def sendnotification(notifications, isProduction=False):
 
     conn.close()
 
-
+# Generates the notifications for the speified users and sends it.
 def notifyUsers(payload, deviceTokens, isProduction=False):
     providerToken = getToken()
 

@@ -12,8 +12,7 @@ class color:
 system = platform.system() # https://stackoverflow.com/questions/1854/python-what-os-am-i-running-on
 if system != "Linux":
     sys.exit(f"{color.red}Error:{color.end} The program can only run in Linux")
-
-
+    sys.exit(0)
 
 print("Installing python requirements")
 os.system("pip install -r requirements.txt")
@@ -49,14 +48,71 @@ try:
 
     f.write(serverServiceFileContents)
     f.close()
+    print(color.green, "Saved service file", color.end)
+    os.system(f"systemctl link {currentDIR}/proyectoIntegrador-webServer.service")
 except Exception as error:
     print(f"{color.red}Write service file error:{color.end} {error}")
 finally:
+    print(color.green, "Created service file for webServer", color.end)
+
+
+checkAlarmsServiceFileContents = f"""
+[Unit]
+Description=Proyecto Integredor-checkAlarms
+After=network.target
+
+[Service]
+User=root
+Group=www-data
+WorkingDirectory={currentDIR}
+Environment="PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin"
+ExecStart=/usr/bin/python3 {currentDIR}/checkAlarms.py
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+"""
+
+try:
+    f = open("proyectoIntegrador-checkAlarms.service", "x")
+
+    f.write(checkAlarmsServiceFileContents)
+    f.close()
     print(color.green, "Saved service file", color.end)
-    os.system(f"systemctl link {currentDIR}/proyectoIntegrador-webServer.service")
+    os.system(f"systemctl link {currentDIR}/proyectoIntegrador-checkAlarms.service")
+except Exception as error:
+    print(f"{color.red}Write service file error:{color.end} {error}")
+finally:
+    print(color.green, "Created service file for checkAlarms", color.end)
+
+voiceRecognitionServiceFileContents = f"""
+[Unit]
+Description=Proyecto Integredor-voiceRecognition
+After=network.target
+
+[Service]
+User=root
+Group=www-data
+WorkingDirectory={currentDIR}
+Environment="PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin"
+ExecStart=/usr/bin/python3 {currentDIR}/voiceRecognition.py
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+"""
+
+try:
+    f = open("proyectoIntegrador-voiceRecognition.service", "x")
+
+    f.write(voiceRecognitionServiceFileContents)
+    f.close()
+    print(color.green, "Saved service file", color.end)
+    os.system(f"systemctl link {currentDIR}/proyectoIntegrador-voiceRecognition.service")
+except Exception as error:
+    print(f"{color.red}Write service file error:{color.end} {error}")
+finally:
+    print(color.green, "Created service file for voiceRecognition", color.end)
 
 
-# make another service file for checkAlarms.py
-
-
-# figure out how to leave voiceRecognition.py running
+print(color.green, "Done", color.end)

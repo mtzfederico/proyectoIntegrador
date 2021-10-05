@@ -11,6 +11,7 @@ import os
 from playsound import playsound
 import platform
 
+# Uses Text To Speach to say the specified text. If TTS doesn't work, it is printed to the console.
 def say(text):
     try:
         if text is None or text == "":

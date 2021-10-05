@@ -1,3 +1,9 @@
+"""
+    wsgi.py
+
+    This is the file used to run the web server using a WSGI server like gunicorn
+"""
+
 from webServer import app
 
 if __name__ == "__main__":
